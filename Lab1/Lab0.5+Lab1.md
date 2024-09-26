@@ -24,6 +24,7 @@
 
 结果如下：
 
+<img src="C:\Users\王峥峥\Desktop\图片1.png" style="zoom:75%;" />
 
 RISC-V计算机加电运行后停在了`0x1000`处，这说明QEMU模拟的这款RISC-V处理器的复位地址是`0x1000`，PC被初始化为`0x1000`。
 
