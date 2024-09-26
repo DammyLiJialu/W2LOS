@@ -23,7 +23,7 @@
 `make gdb`
 
 结果如下：
-![](Lab1/images/屏幕截图 2024-09-24 211214.png)
+!([Lab1/images/屏幕截图 2024-09-24 211214.png](https://github.com/DammyLiJialu/W2LOS/blob/main/Lab1/images/%E5%B1%8F%E5%B9%95%E6%88%AA%E5%9B%BE%202024-09-24%20211214.png?raw=true))
 
 RISC-V计算机加电运行后停在了`0x1000`处，这说明QEMU模拟的这款RISC-V处理器的复位地址是`0x1000`，PC被初始化为`0x1000`。
 
