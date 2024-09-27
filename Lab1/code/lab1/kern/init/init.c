@@ -32,6 +32,10 @@ int kern_init(void) {
     clock_init();  // init clock interrupt
 
     intr_enable();  // enable irq interrupt
+
+    asm volatile("ebreak"); // 断点异常
+    asm volatile(".word 0xFFFFFFFF"); // 非法指令异常
+
     
     while (1)
         ;
