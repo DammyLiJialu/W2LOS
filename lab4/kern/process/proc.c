@@ -86,7 +86,7 @@ static struct proc_struct *
 alloc_proc(void) {
     struct proc_struct *proc = kmalloc(sizeof(struct proc_struct));
     if (proc != NULL) {
-    //LAB4:EXERCISE1 YOUR CODE
+    //LAB4:EXERCISE1 2213906
     /*
      * below fields in proc_struct need to be initialized
      *       enum proc_state state;                      // Process state
@@ -102,7 +102,18 @@ alloc_proc(void) {
      *       uint32_t flags;                             // Process flag
      *       char name[PROC_NAME_LEN + 1];               // Process name
      */
-
+        proc->state = PROC_UNINIT;// 设置进程为初始化状态
+        proc->pid = -1;//还未分配进程ID 设置ID为-1
+        proc->runs = 0; //刚初始化的进程 设置运行次数为0
+        proc->kstack = 0;//进程未被执行 也未被重定位 设置内核栈地址为0（默认地址）
+        proc->need_resched = 0;// 设置不需要重新调度
+        proc->parent = NULL;// 设置父进程为空
+        proc->mm = NULL;// 设置内存管理字段(虚拟内存)为空
+        memset(&(proc->context), 0, sizeof(struct context));// 初始化上下文信息为0
+        proc->tf = NULL;// 设置中断帧指针trapframe为空
+        proc->cr3 = boot_cr3;// 设置CR3寄存器的值为内核页目录基址
+        proc->flags = 0;// 设置进程标志位为0
+        memset(proc->name, 0, PROC_NAME_LEN);// 初始化进程名为0
 
     }
     return proc;
