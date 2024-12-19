@@ -344,31 +344,34 @@ void exit_range(pde_t *pgdir, uintptr_t start, uintptr_t end) {
  *
  * CALL GRAPH: copy_mm-->dup_mmap-->copy_range
  */
+ //copy_mm：负责复制整个内存映射。
+//dup_mmap：负责复制进程A的内存映射到进程B。
+//copy_range：具体实现了将一个内存区域从进程A复制到进程B。
 int copy_range(pde_t *to, pde_t *from, uintptr_t start, uintptr_t end,
                bool share) {
-    assert(start % PGSIZE == 0 && end % PGSIZE == 0);
-    assert(USER_ACCESS(start, end));
-    // copy content by page unit.
+    assert(start % PGSIZE == 0 && end % PGSIZE == 0);//确保start和end是页面对齐的。
+    assert(USER_ACCESS(start, end));//检查地址范围是否在用户空间。
+    // 按页单位复制内容
     do {
-        // call get_pte to find process A's pte according to the addr start
+      // 使用get_pte获取源进程（from）的页面表项（PTE）。
         pte_t *ptep = get_pte(from, start, 0), *nptep;
         if (ptep == NULL) {
             start = ROUNDDOWN(start + PTSIZE, PTSIZE);
             continue;
         }
-        // call get_pte to find process B's pte according to the addr start. If
-        // pte is NULL, just alloc a PT
+        // 调用get_pte根据地址start找到进程B的pte。
+        //如果pte为NULL，则分配一个页表。
         if (*ptep & PTE_V) {
             if ((nptep = get_pte(to, start, 1)) == NULL) {
                 return -E_NO_MEM;
             }
             uint32_t perm = (*ptep & PTE_USER);
-            // get page from ptep
+            // 从ptep来获取页面
             struct Page *page = pte2page(*ptep);
-            // alloc a page for process B
-            struct Page *npage = alloc_page();
+            // 为进程B分配一个页面
+            // struct Page *npage = alloc_page();
             assert(page != NULL);
-            assert(npage != NULL);
+            // assert(npage != NULL);
             int ret = 0;
             /* LAB5:EXERCISE2 YOUR CODE
              * replicate content of page to npage, build the map of phy addr of
@@ -383,12 +386,29 @@ int copy_range(pde_t *to, pde_t *from, uintptr_t start, uintptr_t end,
              * linear addr la
              *    memcpy: typical memory copy function
              *
-             * (1) find src_kvaddr: the kernel virtual address of page
-             * (2) find dst_kvaddr: the kernel virtual address of npage
-             * (3) memory copy from src_kvaddr to dst_kvaddr, size is PGSIZE
-             * (4) build the map of phy addr of  nage with the linear addr start
+             * (1) 获取src_kvaddr：页面的内核虚拟地址
+             * (2) 获取dst_kvaddr：npage的内核虚拟地址
+             * (3) 从src_kvaddr复制到dst_kvaddr，大小为PGSIZE
+             * (4) 在子进程中建立物理地址与线性地址start的映射
              */
 
+            if(share){//如果COW机制启用
+                cprintf("Sharing the page 0x%x\n", page2kva(page));
+                // 将父进程对应物理页面的pte改为只读
+                page_insert(from, page, start, perm & ~PTE_W);
+                // 将子进程虚拟地址映射到父进程对应的物理页，并将pte改为只读
+                ret = page_insert(to, page, start, perm & ~PTE_W);
+            } else {//完整拷贝内存
+                // 申请一个新页
+                struct Page *npage = alloc_page();
+                assert(npage!=NULL);
+                cprintf("alloc a new page 0x%x\n", page2kva(npage));
+
+                void* src_kvaddr = page2kva(page);//父进程对应物理页的内核虚拟地址
+                void* dst_kvaddr = page2kva(npage); //子进程对应物理页的内核虚拟地址
+                memcpy(dst_kvaddr, src_kvaddr, PGSIZE);//复制
+                ret = page_insert(to, npage, start, perm);//在子进程将该虚拟地址映射到对应的物理页
+            }
 
             assert(ret == 0);
         }
